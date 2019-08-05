@@ -1,0 +1,42 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  padding: 0;
+  margin: 0;
+  background: black;
+  color: white;
+  font-family: monospace, sans-serif;
+}
+
+.paper {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  background: none;
+  background: white;
+  margin-bottom: 12px;
+}
+
+.box-wrapper {
+  max-width: 540px;
+  width: 100%;
+}
+
+.box {
+  width: 100%;
+  position: relative;
+  padding-bottom: 100%;
+  overflow: hidden;
+}
+
+.label {
+  display: block;
+  margin-bottom: 12px;
+}
+
+.button {
+  margin-bottom: 12px;
+}
