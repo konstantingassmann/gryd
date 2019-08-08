@@ -5,9 +5,13 @@
 body {
   padding: 0;
   margin: 0;
-  background: black;
-  color: white;
-  font-family: monospace, sans-serif;
+  background: white;
+  color: black;
+  font-family: "IBM Plex Mono", monospace;
+}
+
+.App {
+  padding: 16px;
 }
 
 .paper {
@@ -23,6 +27,7 @@ body {
 .box-wrapper {
   max-width: 540px;
   width: 100%;
+  margin: 0 auto 12px;
 }
 
 .box {
@@ -39,4 +44,50 @@ body {
 
 .button {
   margin-bottom: 12px;
+  background: black;
+  appearance: none;
+  border: none;
+  padding: 8px 16px;
+  color: white;
+  display: block;
+  font-size: 16px;
+  font-family: "IBM Plex Mono", monospace;
+}
+
+.button--file input {
+  display: none;
+}
+
+.logo {
+  background: black;
+  font-family: sans-serif;
+  color: white;
+  font-weight: 700;
+  font-family: "Barlow", sans-serif;
+  font-size: 14px;
+  letter-spacing: 1px;
+  text-align: right;
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 16px;
+  display: flex;
+  align-items: center;
+  padding: 8px;
+}
+
+.logo-text {
+  margin-left: auto;
+}
+
+.footer {
+  background: black;
+  display: flex;
+  justify-content: space-between;
+  padding: 12px 12px calc(12px + env(safe-area-inset-bottom));
+  flex-wrap: wrap;
+}
+
+.footer a {
+  color: white;
+  text-decoration: none;
 }

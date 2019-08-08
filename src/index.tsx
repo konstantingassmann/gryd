@@ -1,73 +1,43 @@
 import * as React from "react";
 import { render } from "react-dom";
 import fixOrientation from "fix-orientation";
+import * as serviceWorker from "./serviceWorker";
+import { EPositionY, EPositionX } from "./types";
+
+import {
+  drawDotGrid,
+  drawImage,
+  realWidth,
+  positionsY,
+  positionsX,
+  getRatio,
+  getImage
+} from "./utils";
 
 import "./styles.css";
 
-const realY = 40;
-const paddingEqual = 165;
-const paddingLarge = 225;
-const realWidth = 1080;
-
-const positionsV: Array<"top" | "bottom"> = ["top", "bottom"];
-const positionsH: Array<"left" | "right" | "center"> = [
-  "left",
-  "right",
-  "center"
-];
-
 let ctx: CanvasRenderingContext2D | null = null;
 
-const drawDotGrid = (ctx: CanvasRenderingContext2D) => {
-  const width = ctx.canvas.width;
-  const height = ctx.canvas.height;
-
-  const step = width / 45;
-  for (let i = step; i < width; i += step) {
-    for (let j = step; j < height; j += step) {
-      ctx.beginPath();
-      ctx.fillStyle = "black";
-      ctx.ellipse(i, j, 1, 1, 0, 0, Math.PI * 2);
-      ctx.fill();
-    }
-  }
-};
-
-const drawImage = (ctx, image, positionV, positionH) => {
-  const targetHeight = 1000;
-  const scale = targetHeight / image.height;
-  const targetWidth = image.width * scale;
-
-  let y = realY;
-  if (positionH === "bottom") {
-    y = ctx.canvas.height - targetHeight - realY;
-  }
-
-  let x = paddingLarge;
-
-  switch (positionH) {
-    case "right":
-      x = ctx.canvas.width - targetWidth - paddingLarge;
-      break;
-    case "center":
-      x = paddingEqual;
-      break;
-  }
-
-  ctx.drawImage(image, x, y, targetWidth, targetHeight);
-};
-
 function App() {
-  const paper = React.useRef<HTMLCanvasElement>();
-  const boxRef = React.useRef<HTMLDivElement>();
+  const paper = React.useRef<HTMLCanvasElement | null>(null);
+  const boxRef = React.useRef<HTMLDivElement | null>(null);
 
-  const [image, setImage] = React.useState<HTMLImageElement>(null);
-  const [positionV, setPositionV] = React.useState<"top" | "bottom">("top");
-  const [positionH, setPositionH] = React.useState<"left" | "right" | "center">(
-    "left"
+  const [ratio, setRatio] = React.useState(0);
+  const [scaledHeight, setScaledHeight] = React.useState(1000);
+
+  const [image, setImage] = React.useState<HTMLImageElement>();
+  const [positionY, setPositionY] = React.useState<EPositionY>(
+    EPositionY.center
+  );
+  const [positionX, setPositionX] = React.useState<EPositionX>(
+    EPositionX.center
   );
 
   React.useEffect(() => {
+    if (!paper.current || !boxRef.current) {
+      return;
+    }
+
     paper.current.width = realWidth;
     paper.current.height = realWidth;
 
@@ -76,97 +46,136 @@ function App() {
     paper.current.style.width = `${width}px`;
     paper.current.style.height = `${height}px`;
 
-    ctx = paper.current.getContext("2d");
+    ctx = paper.current.getContext("2d") as CanvasRenderingContext2D;
 
     drawDotGrid(ctx);
   }, []);
 
-  const fileChange = (files: FileList) => {
-    if (!files.length) {
+  const fileChange = (files: FileList | null) => {
+    if (!files || !files.length) {
       return;
     }
 
     var reader = new FileReader();
     reader.onload = (e: any) => {
-      fixOrientation(e.target.result, { image: true }, function(fixed) {
+      fixOrientation(e.target.result, { image: true }, function(fixed: string) {
         const img = new Image();
         img.onload = () => {
           setImage(img);
+          setRatio(getRatio(img));
         };
-        console.log(fixed);
         img.src = fixed;
       });
     };
     reader.readAsDataURL(files[0]);
   };
 
-  const getImage = () => {
-    const imageCanvas = document.createElement("canvas") as HTMLCanvasElement;
-    imageCanvas.width = realWidth;
-    imageCanvas.height = realWidth;
-    const imageCtx = imageCanvas.getContext("2d") as CanvasRenderingContext2D;
-
-    imageCtx.fillStyle = "white";
-    imageCtx.fillRect(0, 0, imageCanvas.width, imageCanvas.height);
-    drawImage(imageCtx, image, positionV, positionH);
-
-    const link = document.createElement("a");
-    link.download = `framed-${image.name}`;
-    link.href = imageCanvas.toDataURL();
-    link.click();
-  };
-
   React.useEffect(() => {
+    if (!ctx) {
+      return;
+    }
+
     ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
     drawDotGrid(ctx);
 
     if (image) {
-      drawImage(ctx, image, positionV, positionH);
+      drawImage(ctx, image, positionY, positionX, scaledHeight);
     }
-  }, [image, positionH, positionV]);
+  }, [image, positionX, positionY, scaledHeight]);
 
   return (
-    <div className="App">
-      <div className="box-wrapper">
-        <div ref={boxRef} className="box">
-          <canvas ref={paper} className="paper" width="400" height="400" />
+    <React.Fragment>
+      <div className="App">
+        <div className="logo">
+          <div className="logo-text">gryd.</div>
         </div>
+        <div className="box-wrapper">
+          <div ref={boxRef} className="box">
+            <canvas ref={paper} className="paper" width="400" height="400" />
+          </div>
+        </div>
+
+        <label className="button button--file">
+          + Bild hinzufügen
+          <input type="file" onChange={e => fileChange(e.target.files)} />
+        </label>
+
+        <div>Seitenverhältnis: {ratio}</div>
+        <label>
+          scale
+          <input
+            type="range"
+            name="scale"
+            step={1}
+            value={scaledHeight}
+            min={0}
+            max={realWidth}
+            onChange={e => {
+              setScaledHeight(parseFloat(e.target.value));
+            }}
+          />
+          <input
+            type="number"
+            value={scaledHeight}
+            min={0}
+            max={realWidth}
+            onChange={e => {
+              setScaledHeight(parseFloat(e.target.value));
+            }}
+          />
+        </label>
+
+        <div>Vertikale Position:</div>
+        {positionsY.map((p, idx) => (
+          <label className="label" key={idx}>
+            <input
+              type="radio"
+              value={p}
+              name="positionY"
+              checked={positionY === p}
+              onChange={e => setPositionY(p)}
+            />
+            {p}
+          </label>
+        ))}
+
+        <div>XPadding:</div>
+        {positionsX.map((p, idx) => (
+          <label className="label" key={idx}>
+            <input
+              type="radio"
+              value={p}
+              name="positionX"
+              checked={positionX === p}
+              onChange={e => setPositionX(p)}
+            />
+            {p}
+          </label>
+        ))}
+        <button
+          className="button"
+          type="button"
+          onClick={() =>
+            getImage(
+              image as HTMLImageElement,
+              positionX,
+              positionY,
+              scaledHeight
+            )
+          }
+        >
+          download
+        </button>
       </div>
-      <input
-        className="button"
-        type="file"
-        onChange={e => fileChange(e.target.files)}
-      />
-      <button className="button" type="button" onClick={getImage}>
-        download
-      </button>
-      {positionsV.map((p, idx) => (
-        <label className="label" key={idx}>
-          <input
-            type="radio"
-            value={p}
-            name="positionV"
-            checked={positionV === p}
-            onChange={e => setPositionV(p)}
-          />
-          {p}
-        </label>
-      ))}
-      {positionsH.map((p, idx) => (
-        <label className="label" key={idx}>
-          <input
-            type="radio"
-            value={p}
-            name="positionH"
-            checked={positionH === p}
-            onChange={e => setPositionH(p)}
-          />
-          {p}
-        </label>
-      ))}
-    </div>
+      <div className="footer">
+        <a href="https://konstantingassmann.de/">code: @kgassmann</a>
+        <a href="http://floramaxwell.de/">design: @fmaxwell</a>
+      </div>
+    </React.Fragment>
   );
 }
 
 const rootElement = document.getElementById("root");
 render(<App />, rootElement);
+
+serviceWorker.register();

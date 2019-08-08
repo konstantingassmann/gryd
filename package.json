@@ -1,10 +1,11 @@
 {
-  "name": "border",
+  "name": "gryd",
   "version": "1.0.0",
   "description": "",
   "keywords": [],
   "main": "src/index.tsx",
   "dependencies": {
+    "@types/node": "12.7.0",
     "fix-orientation": "1.0.0",
     "react": "16.8.4",
     "react-dom": "16.8.4",
